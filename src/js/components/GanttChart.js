@@ -61,21 +61,6 @@ export class GanttChart {
             nameCell.style.position = 'sticky';
             nameCell.style.left = '0';
             nameCell.style.zIndex = '5';
-            nameCell.style.background = 'var(--color-bg-surface)'; // Cover scroll
-            nameCell.textContent = task.name;
-            grid.appendChild(nameCell);
-
-            // Calculate Grid Position
-            const taskStart = new Date(task.start);
-            const offsetDays = getDaysDiff(start, taskStart);
-            const colStart = offsetDays + 2; // +1 for Name col, +1 for 1-based index
-
-            // Bar
-            const bar = document.createElement('div');
-            bar.className = 'gantt-bar';
-            bar.style.gridColumn = `${colStart} / span ${task.duration}`;
-            bar.innerHTML = `<span class="gantt-bar-label">${task.name}</span>`;
-            bar.onclick = () => this.modal.open(project.id, task);
 
             // We need to place the bar in the correct "Row". 
             // CSS Grid auto-placement fills cells. 
@@ -183,8 +168,11 @@ export class GanttChart {
                 grid.appendChild(nameCell);
 
                 const taskStart = new Date(task.start);
-                const offsetDays = getDaysDiff(start, taskStart);
-                const colStart = offsetDays + 2;
+                let offsetDays = getDaysDiff(start, taskStart);
+                let colStart = offsetDays + 2;
+
+                // Safety check: ensure bar doesn't overlap name column
+                if (colStart < 2) colStart = 2;
 
                 const bar = document.createElement('div');
                 bar.className = 'gantt-bar';

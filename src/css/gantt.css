@@ -25,34 +25,6 @@
     /* Fixed height for rows */
 }
 
-.gantt-row:nth-child(even) {
-    background: hsla(0, 0%, 100%, 0.02);
-}
-
-.gantt-bar {
-    position: absolute;
-    top: 6px;
-    bottom: 6px;
-    background: var(--color-primary);
-    border-radius: var(--radius-sm);
-    padding: 0 var(--space-sm);
-    display: flex;
-    align-items: center;
-    font-size: 0.8rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    cursor: pointer;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    transition: transform 0.2s;
-}
-
-.gantt-bar:hover {
-    transform: scaleY(1.1);
-    z-index: 2;
-    filter: brightness(1.2);
-}
-
 .gantt-bar-label {
     color: white;
     font-weight: 500;

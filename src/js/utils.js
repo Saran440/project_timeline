@@ -14,7 +14,7 @@ export function formatDate(dateStr) {
 
 export function getDaysDiff(start, end) {
     const oneDay = 24 * 60 * 60 * 1000;
-    return Math.round(Math.abs((new Date(end) - new Date(start)) / oneDay));
+    return Math.round((new Date(end) - new Date(start)) / oneDay);
 }
 
 export function addDays(dateStr, days) {
