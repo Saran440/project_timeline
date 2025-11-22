@@ -1,5 +1,6 @@
 import { getTimelineRange, getDaysDiff, formatDate } from '../utils.js';
 import { TaskModal } from './TaskModal.js';
+import { store } from '../store.js';
 
 export class GanttChart {
     constructor(containerId) {
@@ -65,102 +66,6 @@ export class GanttChart {
             document.getElementById('btn-add-first-task').onclick = () => this.modal.open(project.id);
             return;
         }
-
-        const { start, end, days } = getTimelineRange(project.tasks);
-        const colConfig = this.getColumnConfig(days);
-
-        const grid = document.createElement('div');
-        grid.className = 'gantt-grid';
-        grid.style.gridTemplateColumns = `200px repeat(${colConfig.count}, minmax(${colConfig.px}px, 1fr))`;
-
-        // Header
-        const emptyHeader = document.createElement('div');
-        emptyHeader.className = 'gantt-header-cell';
-        emptyHeader.textContent = 'Task';
-        emptyHeader.style.position = 'sticky';
-        emptyHeader.style.left = '0';
-        emptyHeader.style.zIndex = '10';
-        grid.appendChild(emptyHeader);
-
-        for (let i = 0; i < colConfig.count; i++) {
-            const d = new Date(start);
-            d.setDate(d.getDate() + (i * colConfig.daysPerCol));
-            const cell = document.createElement('div');
-            cell.className = 'gantt-header-cell';
-
-            if (this.viewMode === 'Month') {
-                cell.textContent = `W${i + 1}`;
-            } else if (this.viewMode === 'Year') {
-                cell.textContent = d.toLocaleDateString('en-US', { month: 'short' });
-            } else {
-                cell.textContent = formatDate(d);
-            }
-            grid.appendChild(cell);
-        }
-
-        // Tasks
-        project.tasks.forEach(task => {
-            const nameCell = document.createElement('div');
-            nameCell.className = 'gantt-header-cell';
-            nameCell.style.textAlign = 'left';
-            nameCell.style.position = 'sticky';
-            nameCell.style.left = '0';
-            nameCell.style.zIndex = '5';
-            nameCell.style.background = 'var(--color-bg-surface)';
-            nameCell.textContent = task.name;
-            grid.appendChild(nameCell);
-
-            const rowIndex = project.tasks.indexOf(task) + 2;
-            nameCell.style.gridRow = rowIndex;
-
-            const taskStart = new Date(task.start);
-            let offsetDays = getDaysDiff(start, taskStart);
-            let colStart = Math.floor(offsetDays / colConfig.daysPerCol) + 2;
-            let colSpan = Math.max(1, Math.ceil(task.duration / colConfig.daysPerCol));
-
-            if (colStart < 2) colStart = 2;
-
-            // Ghost Bar
-            if (task.history && task.history.length > 0) {
-                const lastHistory = task.history[task.history.length - 1];
-                const ghostStart = new Date(lastHistory.start);
-                let ghostOffset = getDaysDiff(start, ghostStart);
-                let ghostColStart = Math.floor(ghostOffset / colConfig.daysPerCol) + 2;
-                let ghostColSpan = Math.max(1, Math.ceil(lastHistory.duration / colConfig.daysPerCol));
-
-                if (ghostColStart >= 2) {
-                    const ghost = document.createElement('div');
-                    ghost.className = 'gantt-ghost';
-                    ghost.style.gridColumn = `${ghostColStart} / span ${ghostColSpan}`;
-                    ghost.style.gridRow = rowIndex;
-                    ghost.innerHTML = `<span>${lastHistory.duration}d</span>`;
-                    ghost.title = `Previous: ${lastHistory.duration} days`;
-                    grid.appendChild(ghost);
-                }
-            }
-
-            // Bar
-            const bar = document.createElement('div');
-            if (task.type === 'milestone') {
-                bar.className = 'gantt-milestone';
-                bar.style.gridColumn = `${colStart} / span 1`;
-                bar.title = `${task.name} (Milestone)`;
-            } else {
-                bar.className = 'gantt-bar';
-                bar.style.gridColumn = `${colStart} / span ${colSpan}`;
-                bar.innerHTML = `<span class="gantt-bar-label">${task.name}</span>`;
-            }
-
-            bar.style.gridRow = rowIndex;
-            bar.onclick = () => this.modal.open(project.id, task);
-            grid.appendChild(bar);
-        });
-
-        // Add Button
-        const addBtnRow = document.createElement('div');
-        addBtnRow.style.gridColumn = '1 / -1';
-        addBtnRow.style.padding = '1rem';
-        addBtnRow.innerHTML = `<button class="btn btn-ghost" style="width: 100%">+ Add Task</button>`;
         addBtnRow.querySelector('button').onclick = () => this.modal.open(project.id);
         grid.appendChild(addBtnRow);
 

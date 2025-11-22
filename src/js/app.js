@@ -70,6 +70,16 @@ class App {
         const savedTheme = localStorage.getItem('orion_theme') || 'dark';
         document.documentElement.setAttribute('data-theme', savedTheme);
         this.updateThemeIcon(savedTheme);
+
+        // Refresh Button
+        const btnRefresh = document.getElementById('btn-refresh');
+        if (btnRefresh) {
+            btnRefresh.addEventListener('click', () => {
+                if (confirm('Reload data from storage?')) {
+                    location.reload();
+                }
+            });
+        }
     }
 
     updateThemeIcon(theme) {

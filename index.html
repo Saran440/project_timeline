@@ -1,71 +1,77 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Orion Project Manager</title>
-    
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Styles -->
-    <link rel="stylesheet" href="src/css/variables.css" />
-    <link rel="stylesheet" href="src/css/global.css" />
-    <link rel="stylesheet" href="src/css/layout.css" />
-    <link rel="stylesheet" href="src/css/components.css" />
-    <link rel="stylesheet" href="src/css/gantt.css" />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Orion Project Manager</title>
 
-    <!-- Icons (Lucide) -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-  </head>
-  <body>
-    <div id="app">
-      <aside id="sidebar" class="glass-panel">
-        <!-- Sidebar content injected by JS -->
-        <div class="logo-area">
-            <h2>Orion</h2>
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="src/css/variables.css" />
+  <link rel="stylesheet" href="src/css/global.css" />
+  <link rel="stylesheet" href="src/css/layout.css" />
+  <link rel="stylesheet" href="src/css/components.css" />
+  <link rel="stylesheet" href="src/css/gantt.css" />
+
+  <!-- Icons (Lucide) -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body>
+  <div id="app">
+    <aside id="sidebar" class="glass-panel">
+      <!-- Sidebar content injected by JS -->
+      <div class="logo-area">
+        <h2>Orion</h2>
+      </div>
+      <nav id="project-list"></nav>
+      <button id="btn-new-project" class="btn btn-primary">
+        <i data-lucide="plus"></i> New Project
+      </button>
+    </aside>
+
+    <main id="main-content">
+      <header class="top-bar glass-panel">
+        <div id="header-title">
+          <h1 id="active-project-name">Select a Project</h1>
+          <div class="header-actions">
+            <button id="btn-revisions" class="btn btn-ghost">
+              <i data-lucide="history"></i> Revisions
+            </button>
+            <button id="btn-view-all" class="btn btn-ghost">
+              <i data-lucide="layers"></i> All Projects
+            </button>
+            <button id="btn-theme" class="btn btn-ghost" title="Toggle Theme">
+              <i data-lucide="moon"></i>
+            </button>
+            <button id="btn-refresh" class="btn btn-ghost" title="Refresh Data">
+              <i data-lucide="rotate-cw"></i>
+            </button>
+          </div>
         </div>
-        <nav id="project-list"></nav>
-        <button id="btn-new-project" class="btn btn-primary">
-            <i data-lucide="plus"></i> New Project
-        </button>
-      </aside>
+      </header>
 
-      <main id="main-content">
-        <header class="top-bar glass-panel">
-            <div id="header-title">
-                <h1 id="active-project-name">Select a Project</h1>
-                <div class="header-actions">
-                    <button id="btn-revisions" class="btn btn-ghost">
-                        <i data-lucide="history"></i> Revisions
-                    </button>
-                    <button id="btn-view-all" class="btn btn-ghost">
-                        <i data-lucide="layers"></i> All Projects
-                    </button>
-                    <button id="btn-theme" class="btn btn-ghost" title="Toggle Theme">
-                        <i data-lucide="moon"></i>
-                    </button>
-                </div>
-            </div>
-        </header>
-
-        <div id="gantt-container" class="gantt-view">
-            <!-- Gantt Chart injected by JS -->
-            <div class="empty-state">
-                <p>Select or create a project to get started.</p>
-            </div>
+      <div id="gantt-container" class="gantt-view">
+        <!-- Gantt Chart injected by JS -->
+        <div class="empty-state">
+          <p>Select or create a project to get started.</p>
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
+  </div>
 
-    <!-- Modals -->
-    <div id="modal-overlay" class="hidden">
-        <!-- Dynamic Modal Content -->
-    </div>
+  <!-- Modals -->
+  <div id="modal-overlay" class="hidden">
+    <!-- Dynamic Modal Content -->
+  </div>
 
-    <!-- Scripts -->
-    <script type="module" src="src/js/app.js"></script>
-  </body>
+  <!-- Scripts -->
+  <script type="module" src="src/js/app.js"></script>
+</body>
+
 </html>

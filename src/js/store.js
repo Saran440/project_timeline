@@ -107,6 +107,15 @@ class Store {
         }
     }
 
+    reorderTask(projectId, fromIndex, toIndex) {
+        const project = this.state.projects.find(p => p.id === projectId);
+        if (project) {
+            const [movedTask] = project.tasks.splice(fromIndex, 1);
+            project.tasks.splice(toIndex, 0, movedTask);
+            this.saveState();
+        }
+    }
+
     deleteTask(projectId, taskId) {
         const project = this.state.projects.find(p => p.id === projectId);
         if (project) {
