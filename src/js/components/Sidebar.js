@@ -22,10 +22,24 @@ export class Sidebar {
             const el = document.createElement('div');
             el.className = `project-item ${state.activeProjectId === project.id ? 'active' : ''}`;
             el.innerHTML = `
-                <span>${project.name}</span>
-                <span style="font-size: 0.8em; opacity: 0.7">${project.tasks.length} tasks</span>
+                <div style="flex: 1; display: flex; flex-direction: column;" onclick="store.setActiveProject('${project.id}')">
+                    <span>${project.name}</span>
+                    <span style="font-size: 0.8em; opacity: 0.7">${project.tasks.length} tasks</span>
+                </div>
+                <button class="btn-delete-project btn-ghost" style="padding: 4px; color: var(--hue-danger);" title="Delete Project">
+                    <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i>
+                </button>
             `;
-            el.onclick = () => store.setActiveProject(project.id);
+
+            // Bind delete click
+            const deleteBtn = el.querySelector('.btn-delete-project');
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation();
+                if (confirm(`Delete project "${project.name}"?`)) {
+                    store.deleteProject(project.id);
+                }
+            };
+
             this.container.appendChild(el);
         });
     }

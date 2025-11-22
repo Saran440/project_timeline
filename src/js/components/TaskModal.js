@@ -34,7 +34,7 @@ export class TaskModal {
                     </div>
                     <div class="input-group">
                         <label>Start Date</label>
-                        <input type="date" name="start" class="input-field" value="${task ? task.start : new Date().toISOString().split('T')[0]}" required>
+                        <input type="date" name="start" class="input-field" value="${task ? task.start : new Date().toISOString().split('T')[0]}" required style="color-scheme: dark;">
                     </div>
                     <div class="input-group">
                         <label>Duration (Days)</label>

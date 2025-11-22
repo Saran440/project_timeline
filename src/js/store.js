@@ -62,6 +62,14 @@ class Store {
         this.saveState();
     }
 
+    deleteProject(id) {
+        this.state.projects = this.state.projects.filter(p => p.id !== id);
+        if (this.state.activeProjectId === id) {
+            this.state.activeProjectId = null;
+        }
+        this.saveState();
+    }
+
     addTask(projectId, task) {
         const project = this.state.projects.find(p => p.id === projectId);
         if (project) {
