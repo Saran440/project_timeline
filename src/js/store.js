@@ -75,7 +75,9 @@ class Store {
         if (project) {
             project.tasks.push({
                 id: generateId(),
-                ...task // name, start, duration
+                type: task.type || 'task', // 'task' | 'milestone'
+                history: [], // Array of previous versions
+                ...task
             });
             this.saveState();
         }
@@ -86,7 +88,20 @@ class Store {
         if (project) {
             const taskIndex = project.tasks.findIndex(t => t.id === taskId);
             if (taskIndex > -1) {
-                project.tasks[taskIndex] = { ...project.tasks[taskIndex], ...updates };
+                const oldTask = project.tasks[taskIndex];
+
+                // Save history if duration changed
+                if (updates.duration && updates.duration !== oldTask.duration) {
+                    if (!oldTask.history) oldTask.history = [];
+                    oldTask.history.push({
+                        timestamp: new Date().toISOString(),
+                        duration: oldTask.duration,
+                        start: oldTask.start,
+                        name: oldTask.name
+                    });
+                }
+
+                project.tasks[taskIndex] = { ...oldTask, ...updates };
                 this.saveState();
             }
         }

@@ -42,6 +42,27 @@
     --transition-smooth: 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
+[data-theme="light"] {
+    --color-bg-base: hsl(220, 20%, 97%);
+    --color-bg-surface: hsl(0, 0%, 100%);
+    --color-bg-surface-hover: hsl(220, 20%, 94%);
+    
+    --color-primary: hsl(var(--hue-primary), 80%, 50%);
+    --color-primary-hover: hsl(var(--hue-primary), 80%, 45%);
+    --color-primary-glow: hsla(var(--hue-primary), 80%, 50%, 0.2);
+
+    --color-text-main: hsl(220, 20%, 10%);
+    --color-text-muted: hsl(220, 10%, 40%);
+    
+    --color-border: hsla(220, 20%, 10%, 0.1);
+    --color-border-hover: hsla(220, 20%, 10%, 0.2);
+
+    /* Glassmorphism Light */
+    --glass-bg: hsla(0, 0%, 100%, 0.7);
+    --glass-border: hsla(220, 20%, 10%, 0.08);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
+}
+
 /* Utility Classes for Glass */
 .glass-panel {
     background: var(--glass-bg);

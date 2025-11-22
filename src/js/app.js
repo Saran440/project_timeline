@@ -52,6 +52,33 @@ class App {
                 store.setActiveProject('ALL');
             });
         }
+
+        // Theme Toggle
+        const btnTheme = document.getElementById('btn-theme');
+        if (btnTheme) {
+            btnTheme.addEventListener('click', () => {
+                const current = document.documentElement.getAttribute('data-theme');
+                const next = current === 'light' ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', next);
+                localStorage.setItem('orion_theme', next);
+                // Update icon
+                this.updateThemeIcon(next);
+            });
+        }
+
+        // Init Theme
+        const savedTheme = localStorage.getItem('orion_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        this.updateThemeIcon(savedTheme);
+    }
+
+    updateThemeIcon(theme) {
+        const btn = document.getElementById('btn-theme');
+        if (btn) {
+            // Sun for light, Moon for dark
+            btn.innerHTML = theme === 'light' ? '<i data-lucide="sun"></i>' : '<i data-lucide="moon"></i>';
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
     }
 
     render(state) {

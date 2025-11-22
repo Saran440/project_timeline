@@ -38,7 +38,11 @@ export class TaskModal {
                     </div>
                     <div class="input-group">
                         <label>Duration (Days)</label>
-                        <input type="number" name="duration" class="input-field" value="${task ? task.duration : 1}" min="1" required>
+                        <input type="number" name="duration" class="input-field" value="${task ? task.duration : 1}" min="0" required>
+                    </div>
+                    <div class="input-group" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="checkbox" name="isMilestone" id="isMilestone" ${task && task.type === 'milestone' ? 'checked' : ''}>
+                        <label for="isMilestone" style="margin: 0; cursor: pointer;">Mark as Milestone</label>
                     </div>
                     <div class="modal-actions">
                         ${isEdit ? `<button type="button" id="btn-delete-task" class="btn btn-ghost" style="color: var(--hue-danger)">Delete</button>` : ''}
@@ -56,6 +60,26 @@ export class TaskModal {
         // Bind events
         document.getElementById('modal-close').onclick = () => this.close();
 
+        // Milestone toggle logic
+        const milestoneCb = document.getElementById('isMilestone');
+        const durationInput = document.querySelector('input[name="duration"]');
+
+        // Initial state check
+        if (milestoneCb.checked) {
+            durationInput.value = 0;
+            durationInput.disabled = true;
+        }
+
+        milestoneCb.onchange = (e) => {
+            if (e.target.checked) {
+                durationInput.value = 0;
+                durationInput.disabled = true;
+            } else {
+                durationInput.value = 1;
+                durationInput.disabled = false;
+            }
+        };
+
         if (isEdit) {
             document.getElementById('btn-delete-task').onclick = () => {
                 if (confirm('Delete this task?')) {
@@ -68,10 +92,13 @@ export class TaskModal {
         document.getElementById('task-form').onsubmit = (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
+            const isMilestone = formData.get('isMilestone') === 'on';
+
             const data = {
                 name: formData.get('name'),
                 start: formData.get('start'),
-                duration: parseInt(formData.get('duration'))
+                duration: isMilestone ? 0 : parseInt(formData.get('duration')),
+                type: isMilestone ? 'milestone' : 'task'
             };
 
             if (isEdit) {

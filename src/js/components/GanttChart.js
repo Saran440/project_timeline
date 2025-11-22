@@ -5,9 +5,51 @@ export class GanttChart {
     constructor(containerId) {
         this.container = document.getElementById(containerId);
         this.modal = new TaskModal();
+        this.viewMode = 'Day'; // Day, Month, Year
+        this.setupViewControls();
+    }
+
+    setupViewControls() {
+        // Check if controls already exist to prevent duplication
+        if (document.getElementById('gantt-controls')) return;
+
+        const controls = document.createElement('div');
+        controls.id = 'gantt-controls';
+        controls.className = 'gantt-controls';
+        controls.style.padding = '0 0 1rem 0';
+        controls.style.display = 'flex';
+        controls.style.gap = '1rem';
+        controls.innerHTML = `
+            <select id="view-mode-select" class="input-field" style="width: auto;">
+                <option value="Day">Day View</option>
+                <option value="Month">Month View</option>
+                <option value="Year">Year View</option>
+            </select>
+        `;
+        this.container.parentNode.insertBefore(controls, this.container);
+
+        document.getElementById('view-mode-select').addEventListener('change', (e) => {
+            this.viewMode = e.target.value;
+            // In a real app, we would trigger a re-render here. 
+            // For now, the user will see the change on next interaction or we can try to trigger it if we had access to current project.
+        });
+    }
+
+    getColumnConfig(days) {
+        if (this.viewMode === 'Month') {
+            const weeks = Math.ceil(days / 7);
+            return { count: weeks, unit: 'Week', px: 60, daysPerCol: 7 };
+        } else if (this.viewMode === 'Year') {
+            const months = Math.ceil(days / 30);
+            return { count: months, unit: 'Month', px: 80, daysPerCol: 30 };
+        }
+        return { count: days, unit: 'Day', px: 40, daysPerCol: 1 };
     }
 
     render(project) {
+        const select = document.getElementById('view-mode-select');
+        if (select) this.viewMode = select.value;
+
         if (!project) {
             this.container.innerHTML = `<div class="empty-state"><p>Select a project to view timeline</p></div>`;
             return;
@@ -25,15 +67,13 @@ export class GanttChart {
         }
 
         const { start, end, days } = getTimelineRange(project.tasks);
+        const colConfig = this.getColumnConfig(days);
 
-        // Create Grid Container
         const grid = document.createElement('div');
         grid.className = 'gantt-grid';
-        // Column 1: Task Name (200px), Rest: Days
-        grid.style.gridTemplateColumns = `200px repeat(${days}, minmax(40px, 1fr))`;
+        grid.style.gridTemplateColumns = `200px repeat(${colConfig.count}, minmax(${colConfig.px}px, 1fr))`;
 
-        // 1. Header Row
-        // Empty top-left cell
+        // Header
         const emptyHeader = document.createElement('div');
         emptyHeader.className = 'gantt-header-cell';
         emptyHeader.textContent = 'Task';
@@ -42,53 +82,81 @@ export class GanttChart {
         emptyHeader.style.zIndex = '10';
         grid.appendChild(emptyHeader);
 
-        // Date Headers
-        for (let i = 0; i < days; i++) {
+        for (let i = 0; i < colConfig.count; i++) {
             const d = new Date(start);
-            d.setDate(d.getDate() + i);
+            d.setDate(d.getDate() + (i * colConfig.daysPerCol));
             const cell = document.createElement('div');
             cell.className = 'gantt-header-cell';
-            cell.textContent = formatDate(d);
+
+            if (this.viewMode === 'Month') {
+                cell.textContent = `W${i + 1}`;
+            } else if (this.viewMode === 'Year') {
+                cell.textContent = d.toLocaleDateString('en-US', { month: 'short' });
+            } else {
+                cell.textContent = formatDate(d);
+            }
             grid.appendChild(cell);
         }
 
-        // 2. Task Rows
+        // Tasks
         project.tasks.forEach(task => {
-            // Task Name Cell
             const nameCell = document.createElement('div');
             nameCell.className = 'gantt-header-cell';
             nameCell.style.textAlign = 'left';
             nameCell.style.position = 'sticky';
             nameCell.style.left = '0';
             nameCell.style.zIndex = '5';
+            nameCell.style.background = 'var(--color-bg-surface)';
+            nameCell.textContent = task.name;
+            grid.appendChild(nameCell);
 
-            // We need to place the bar in the correct "Row". 
-            // CSS Grid auto-placement fills cells. 
-            // To make it look like a row, we need to fill the empty cells or use a different layout.
-            // Actually, standard Grid places items in the next available cell.
-            // If we want a "Row" per task, we need to ensure the bar is on the same visual row as the name.
-            // Easier approach: The "Grid" is just the timeline. The "Name" is a separate column?
-            // No, let's use `display: contents` or just flat children.
-            // If we just append the bar, it will try to fit in the next cell (column 2).
-            // If we set grid-column, it will span.
-            // But we need to make sure it stays on the SAME ROW as the name.
-            // CSS Grid doesn't natively link "Name Cell" and "Bar" unless they are in a wrapper with `subgrid` (not widely supported) or we manually manage row indices.
-
-            // FIX: Use `grid-row` explicitly?
-            // We are iterating tasks. Let's assign a row index.
-            // Header is row 1. Task 1 is row 2.
             const rowIndex = project.tasks.indexOf(task) + 2;
             nameCell.style.gridRow = rowIndex;
+
+            const taskStart = new Date(task.start);
+            let offsetDays = getDaysDiff(start, taskStart);
+            let colStart = Math.floor(offsetDays / colConfig.daysPerCol) + 2;
+            let colSpan = Math.max(1, Math.ceil(task.duration / colConfig.daysPerCol));
+
+            if (colStart < 2) colStart = 2;
+
+            // Ghost Bar
+            if (task.history && task.history.length > 0) {
+                const lastHistory = task.history[task.history.length - 1];
+                const ghostStart = new Date(lastHistory.start);
+                let ghostOffset = getDaysDiff(start, ghostStart);
+                let ghostColStart = Math.floor(ghostOffset / colConfig.daysPerCol) + 2;
+                let ghostColSpan = Math.max(1, Math.ceil(lastHistory.duration / colConfig.daysPerCol));
+
+                if (ghostColStart >= 2) {
+                    const ghost = document.createElement('div');
+                    ghost.className = 'gantt-ghost';
+                    ghost.style.gridColumn = `${ghostColStart} / span ${ghostColSpan}`;
+                    ghost.style.gridRow = rowIndex;
+                    ghost.innerHTML = `<span>${lastHistory.duration}d</span>`;
+                    ghost.title = `Previous: ${lastHistory.duration} days`;
+                    grid.appendChild(ghost);
+                }
+            }
+
+            // Bar
+            const bar = document.createElement('div');
+            if (task.type === 'milestone') {
+                bar.className = 'gantt-milestone';
+                bar.style.gridColumn = `${colStart} / span 1`;
+                bar.title = `${task.name} (Milestone)`;
+            } else {
+                bar.className = 'gantt-bar';
+                bar.style.gridColumn = `${colStart} / span ${colSpan}`;
+                bar.innerHTML = `<span class="gantt-bar-label">${task.name}</span>`;
+            }
+
             bar.style.gridRow = rowIndex;
-
+            bar.onclick = () => this.modal.open(project.id, task);
             grid.appendChild(bar);
-
-            // Fill background cells for grid lines?
-            // We can use a pseudo-element or background-image on the container for lines.
-            // Or just let the gaps do the work.
         });
 
-        // Add "Add Task" button at the bottom
+        // Add Button
         const addBtnRow = document.createElement('div');
         addBtnRow.style.gridColumn = '1 / -1';
         addBtnRow.style.padding = '1rem';
@@ -101,12 +169,14 @@ export class GanttChart {
     }
 
     renderMulti(projects) {
+        const select = document.getElementById('view-mode-select');
+        if (select) this.viewMode = select.value;
+
         if (!projects || projects.length === 0) {
             this.container.innerHTML = `<div class="empty-state"><p>No projects to display.</p></div>`;
             return;
         }
 
-        // Flatten tasks to calculate global range
         const allTasks = projects.flatMap(p => p.tasks);
         if (allTasks.length === 0) {
             this.container.innerHTML = `<div class="empty-state"><p>No tasks across any projects.</p></div>`;
@@ -114,12 +184,12 @@ export class GanttChart {
         }
 
         const { start, end, days } = getTimelineRange(allTasks);
+        const colConfig = this.getColumnConfig(days);
 
         const grid = document.createElement('div');
         grid.className = 'gantt-grid';
-        grid.style.gridTemplateColumns = `200px repeat(${days}, minmax(40px, 1fr))`;
+        grid.style.gridTemplateColumns = `200px repeat(${colConfig.count}, minmax(${colConfig.px}px, 1fr))`;
 
-        // Header
         const emptyHeader = document.createElement('div');
         emptyHeader.className = 'gantt-header-cell';
         emptyHeader.textContent = 'Project / Task';
@@ -128,19 +198,18 @@ export class GanttChart {
         emptyHeader.style.zIndex = '10';
         grid.appendChild(emptyHeader);
 
-        for (let i = 0; i < days; i++) {
+        for (let i = 0; i < colConfig.count; i++) {
             const d = new Date(start);
-            d.setDate(d.getDate() + i);
+            d.setDate(d.getDate() + (i * colConfig.daysPerCol));
             const cell = document.createElement('div');
             cell.className = 'gantt-header-cell';
-            cell.textContent = formatDate(d);
+            cell.textContent = this.viewMode === 'Day' ? formatDate(d) : (this.viewMode === 'Month' ? `W${i + 1}` : d.toLocaleDateString('en-US', { month: 'short' }));
             grid.appendChild(cell);
         }
 
         let currentRow = 2;
 
         projects.forEach(project => {
-            // Project Section Header
             const sectionHeader = document.createElement('div');
             sectionHeader.style.gridColumn = `1 / -1`;
             sectionHeader.style.gridRow = currentRow;
@@ -152,7 +221,6 @@ export class GanttChart {
             sectionHeader.style.borderBottom = '1px solid var(--color-border)';
             sectionHeader.textContent = project.name;
             grid.appendChild(sectionHeader);
-
             currentRow++;
 
             project.tasks.forEach(task => {
@@ -169,16 +237,22 @@ export class GanttChart {
 
                 const taskStart = new Date(task.start);
                 let offsetDays = getDaysDiff(start, taskStart);
-                let colStart = offsetDays + 2;
+                let colStart = Math.floor(offsetDays / colConfig.daysPerCol) + 2;
+                let colSpan = Math.max(1, Math.ceil(task.duration / colConfig.daysPerCol));
 
-                // Safety check: ensure bar doesn't overlap name column
                 if (colStart < 2) colStart = 2;
 
                 const bar = document.createElement('div');
-                bar.className = 'gantt-bar';
-                bar.style.gridColumn = `${colStart} / span ${task.duration}`;
+                if (task.type === 'milestone') {
+                    bar.className = 'gantt-milestone';
+                    bar.style.gridColumn = `${colStart} / span 1`;
+                } else {
+                    bar.className = 'gantt-bar';
+                    bar.style.gridColumn = `${colStart} / span ${colSpan}`;
+                    bar.innerHTML = `<span class="gantt-bar-label">${task.name}</span>`;
+                }
+
                 bar.style.gridRow = currentRow;
-                bar.innerHTML = `<span class="gantt-bar-label">${task.name}</span>`;
                 bar.onclick = () => this.modal.open(project.id, task);
 
                 grid.appendChild(bar);
