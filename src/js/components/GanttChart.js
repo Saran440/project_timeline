@@ -11,7 +11,6 @@ export class GanttChart {
     }
 
     setupViewControls() {
-        // Check if controls already exist to prevent duplication
         if (document.getElementById('gantt-controls')) return;
 
         const controls = document.createElement('div');
@@ -31,8 +30,6 @@ export class GanttChart {
 
         document.getElementById('view-mode-select').addEventListener('change', (e) => {
             this.viewMode = e.target.value;
-            // In a real app, we would trigger a re-render here. 
-            // For now, the user will see the change on next interaction or we can try to trigger it if we had access to current project.
         });
     }
 
@@ -66,6 +63,138 @@ export class GanttChart {
             document.getElementById('btn-add-first-task').onclick = () => this.modal.open(project.id);
             return;
         }
+
+        const { start, end, days } = getTimelineRange(project.tasks);
+        const colConfig = this.getColumnConfig(days);
+
+        const grid = document.createElement('div');
+        grid.className = 'gantt-grid';
+        grid.style.gridTemplateColumns = `200px repeat(${colConfig.count}, minmax(${colConfig.px}px, 1fr))`;
+
+        // Header
+        const emptyHeader = document.createElement('div');
+        emptyHeader.className = 'gantt-header-cell';
+        emptyHeader.textContent = 'Task';
+        emptyHeader.style.position = 'sticky';
+        emptyHeader.style.left = '0';
+        emptyHeader.style.zIndex = '10';
+        grid.appendChild(emptyHeader);
+
+        for (let i = 0; i < colConfig.count; i++) {
+            const d = new Date(start);
+            d.setDate(d.getDate() + (i * colConfig.daysPerCol));
+            const cell = document.createElement('div');
+            cell.className = 'gantt-header-cell';
+            cell.textContent = this.viewMode === 'Day' ? formatDate(d) : (this.viewMode === 'Month' ? `W${i + 1}` : d.toLocaleDateString('en-US', { month: 'short' }));
+            grid.appendChild(cell);
+        }
+
+        // Tasks Loop
+        project.tasks.forEach((task, index) => {
+            // Task Name Cell with Drag Handle
+            const nameCell = document.createElement('div');
+            nameCell.className = 'gantt-header-cell task-name-cell';
+            nameCell.style.textAlign = 'left';
+            nameCell.style.position = 'sticky';
+            nameCell.style.left = '0';
+            nameCell.style.zIndex = '5';
+            nameCell.style.background = 'var(--color-bg-surface)';
+            nameCell.style.display = 'flex';
+            nameCell.style.alignItems = 'center';
+            nameCell.style.gap = '0.5rem';
+
+            const handle = document.createElement('span');
+            handle.innerHTML = `<i data-lucide="grip-vertical" style="width: 14px; height: 14px; opacity: 0.5; cursor: grab;"></i>`;
+            nameCell.appendChild(handle);
+
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = task.name;
+            nameSpan.style.flex = '1';
+            nameSpan.style.overflow = 'hidden';
+            nameSpan.style.textOverflow = 'ellipsis';
+            nameCell.appendChild(nameSpan);
+
+            // Drag Events
+            nameCell.draggable = true;
+            nameCell.ondragstart = (e) => {
+                e.dataTransfer.setData('text/plain', index);
+                e.dataTransfer.effectAllowed = 'move';
+                nameCell.style.opacity = '0.5';
+            };
+            nameCell.ondragend = () => {
+                nameCell.style.opacity = '1';
+            };
+            nameCell.ondragover = (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                nameCell.style.background = 'var(--color-bg-surface-hover)';
+            };
+            nameCell.ondragleave = () => {
+                nameCell.style.background = 'var(--color-bg-surface)';
+            };
+            nameCell.ondrop = (e) => {
+                e.preventDefault();
+                nameCell.style.background = 'var(--color-bg-surface)';
+                const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                if (fromIndex !== index) {
+                    store.reorderTask(project.id, fromIndex, index);
+                }
+            };
+
+            grid.appendChild(nameCell);
+
+            const rowIndex = index + 2;
+            nameCell.style.gridRow = rowIndex;
+
+            // Calculate Grid Position
+            const taskStart = new Date(task.start);
+            let offsetDays = getDaysDiff(start, taskStart);
+            let colStart = Math.floor(offsetDays / colConfig.daysPerCol) + 2;
+            let colSpan = Math.max(1, Math.ceil(task.duration / colConfig.daysPerCol));
+
+            if (colStart < 2) colStart = 2;
+
+            // Ghost Bar (History)
+            if (task.history && task.history.length > 0) {
+                const lastHistory = task.history[task.history.length - 1];
+                const ghostStart = new Date(lastHistory.start);
+                let ghostOffset = getDaysDiff(start, ghostStart);
+                let ghostColStart = Math.floor(ghostOffset / colConfig.daysPerCol) + 2;
+                let ghostColSpan = Math.max(1, Math.ceil(lastHistory.duration / colConfig.daysPerCol));
+
+                if (ghostColStart >= 2) {
+                    const ghost = document.createElement('div');
+                    ghost.className = 'gantt-ghost';
+                    ghost.style.gridColumn = `${ghostColStart} / span ${ghostColSpan}`;
+                    ghost.style.gridRow = rowIndex;
+                    ghost.innerHTML = `<span>${lastHistory.duration}d</span>`;
+                    ghost.title = `Previous: ${lastHistory.duration} days`;
+                    grid.appendChild(ghost);
+                }
+            }
+
+            // Actual Task/Milestone
+            const bar = document.createElement('div');
+            if (task.type === 'milestone') {
+                bar.className = 'gantt-milestone';
+                bar.style.gridColumn = `${colStart} / span 1`;
+                bar.title = `${task.name} (Milestone)`;
+            } else {
+                bar.className = 'gantt-bar';
+                bar.style.gridColumn = `${colStart} / span ${colSpan}`;
+                bar.innerHTML = `<span class="gantt-bar-label">${task.name}</span>`;
+            }
+
+            bar.style.gridRow = rowIndex;
+            bar.onclick = () => this.modal.open(project.id, task);
+            grid.appendChild(bar);
+        });
+
+        // Add Button
+        const addBtnRow = document.createElement('div');
+        addBtnRow.style.gridColumn = '1 / -1';
+        addBtnRow.style.padding = '1rem';
+        addBtnRow.innerHTML = `<button class="btn btn-ghost" style="width: 100%">+ Add Task</button>`;
         addBtnRow.querySelector('button').onclick = () => this.modal.open(project.id);
         grid.appendChild(addBtnRow);
 
@@ -146,6 +275,24 @@ export class GanttChart {
                 let colSpan = Math.max(1, Math.ceil(task.duration / colConfig.daysPerCol));
 
                 if (colStart < 2) colStart = 2;
+
+                // Ghost Bar (History) for Multi View
+                if (task.history && task.history.length > 0) {
+                    const lastHistory = task.history[task.history.length - 1];
+                    const ghostStart = new Date(lastHistory.start);
+                    let ghostOffset = getDaysDiff(start, ghostStart);
+                    let ghostColStart = Math.floor(ghostOffset / colConfig.daysPerCol) + 2;
+                    let ghostColSpan = Math.max(1, Math.ceil(lastHistory.duration / colConfig.daysPerCol));
+
+                    if (ghostColStart >= 2) {
+                        const ghost = document.createElement('div');
+                        ghost.className = 'gantt-ghost';
+                        ghost.style.gridColumn = `${ghostColStart} / span ${ghostColSpan}`;
+                        ghost.style.gridRow = currentRow;
+                        ghost.innerHTML = `<span>${lastHistory.duration}d</span>`;
+                        grid.appendChild(ghost);
+                    }
+                }
 
                 const bar = document.createElement('div');
                 if (task.type === 'milestone') {
