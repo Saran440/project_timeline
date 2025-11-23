@@ -19,33 +19,6 @@ class App {
         this.render(store.state);
 
         // Global Listeners
-        const btnRevisions = document.getElementById('btn-revisions');
-        if (btnRevisions) {
-            btnRevisions.addEventListener('click', () => {
-                const pid = store.state.activeProjectId;
-                if (pid && pid !== 'ALL') {
-                    const action = prompt("Type 'save' to save a snapshot, or 'restore' to restore the last one.");
-                    if (action === 'save') {
-                        store.createRevision(pid);
-                        alert('Revision saved!');
-                    } else if (action === 'restore') {
-                        const revs = store.state.revisions.filter(r => r.projectId === pid);
-                        if (revs.length > 0) {
-                            const last = revs[revs.length - 1];
-                            if (confirm(`Restore snapshot from ${new Date(last.timestamp).toLocaleString()}?`)) {
-                                store.restoreRevision(last.id);
-                                alert('Restored!');
-                            }
-                        } else {
-                            alert('No revisions found.');
-                        }
-                    }
-                } else {
-                    alert('Select a project first.');
-                }
-            });
-        }
-
         const btnViewAll = document.getElementById('btn-view-all');
         if (btnViewAll) {
             btnViewAll.addEventListener('click', () => {
