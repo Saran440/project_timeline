@@ -1,17 +1,16 @@
 import { store } from '../store.js';
+import { ProjectModal } from './ProjectModal.js';
 
 export class Sidebar {
     constructor(containerId) {
         this.container = document.getElementById(containerId);
+        this.projectModal = new ProjectModal();
         this.setupListeners();
     }
 
     setupListeners() {
         document.getElementById('btn-new-project').addEventListener('click', () => {
-            const name = prompt("Enter project name:");
-            if (name) {
-                store.addProject(name);
-            }
+            this.projectModal.open();
         });
     }
 
